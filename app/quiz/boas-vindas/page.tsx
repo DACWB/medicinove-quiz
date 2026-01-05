@@ -22,7 +22,7 @@ export default function BoasVindas() {
         <div className="flex justify-center mb-8">
           <div className="bg-white p-4 rounded-lg">
             <Image 
-              src="/botao_medicinove.png" 
+              src="/images/logo.png" 
               alt="MediciNove" 
               width={200} 
               height={60}
