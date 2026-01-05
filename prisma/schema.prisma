@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Student {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  whatsapp      String
+  token         String    // Token usado para acessar
+  progress      Int       @default(0) // Número da última pergunta respondida
+  completed     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  answers       Answer[]
+  result        Result?
+}
+
+model Answer {
+  id          String   @id @default(cuid())
+  studentId   String
+  questionId  Int      // ID da pergunta (1-47)
+  answer      String   @db.Text // Resposta em formato JSON para múltiplas escolhas
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@unique([studentId, questionId])
+}
+
+model Result {
+  id                String   @id @default(cuid())
+  studentId         String   @unique
+  
+  // Perfis (pontuação)
+  executorScore     Int      @default(0)
+  analistaScore     Int      @default(0)
+  exploradorScore   Int      @default(0)
+  metodicoScore     Int      @default(0)
+  
+  // Perfil principal e secundário
+  mainProfile       String   // Executor, Analista, Explorador, Metódico
+  secondProfile     String?  // Segundo perfil mais pontuado
+  
+  // Scores
+  confortoTech      Int      // 0-10
+  maturidadeIA      Int      // 0-10
+  lgpdRisco         Int      // 0-10
+  
+  // Trilha recomendada
+  trilha            Int      // 1-5
+  trilhaName        String   // Nome da trilha
+  
+  // Flags de alerta
+  flags             String   @db.Text // JSON array de flags
+  
+  // Primeira missão
+  primeiraMissao    String   @db.Text
+  
+  // Texto completo do resultado
+  resultadoCompleto String   @db.Text
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  student           Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
