@@ -6,6 +6,7 @@ export interface Question {
   options?: string[];
   maxSelections?: number;
   required: boolean;
+  conditionalOn?: { questionId: number; value: string };
 }
 
 export const questions: Question[] = [
@@ -25,8 +26,9 @@ export const questions: Question[] = [
     id: 2,
     section: 'Termo de Privacidade e LGPD',
     question: 'Canal preferido para comunicações essenciais da mentoria (obrigatório)',
-    type: 'single',
+    type: 'multiple',
     options: ['WhatsApp', 'E-mail'],
+    maxSelections: 2,
     required: true
   },
   {
@@ -81,6 +83,14 @@ export const questions: Question[] = [
     required: true
   },
   {
+    id: 6.5,
+    section: 'Identificação',
+    question: 'Qual especialidade?',
+    type: 'text',
+    required: false,
+    conditionalOn: { questionId: 6, value: 'Outra' }
+  },
+  {
     id: 7,
     section: 'Identificação',
     question: 'Seu cenário hoje',
@@ -113,8 +123,9 @@ export const questions: Question[] = [
   {
     id: 9,
     section: 'S — Subjetivo',
-    question: 'O que te fez entrar na mentoria agora (gatilho real)?',
-    type: 'single',
+    question: 'O que te fez entrar na mentoria agora?',
+    type: 'multiple',
+    maxSelections: 3,
     options: [
       'Falta de tempo/sobrecarga',
       'Quero padronizar consultório e equipe',
@@ -339,8 +350,24 @@ export const questions: Question[] = [
     section: 'O — Objetivo',
     question: 'Você paga alguma IA hoje?',
     type: 'single',
-    options: ['Sim (qual e por quê?)', 'Não', 'Já paguei e parei'],
+    options: ['Sim', 'Não', 'Já paguei e parei'],
     required: true
+  },
+  {
+    id: 26.1,
+    section: 'O — Objetivo',
+    question: 'Qual IA você paga?',
+    type: 'text',
+    required: false,
+    conditionalOn: { questionId: 26, value: 'Sim' }
+  },
+  {
+    id: 26.2,
+    section: 'O — Objetivo',
+    question: 'Por que você paga essa IA?',
+    type: 'textarea',
+    required: false,
+    conditionalOn: { questionId: 26, value: 'Sim' }
   },
   {
     id: 27,
@@ -481,7 +508,7 @@ export const questions: Question[] = [
   {
     id: 37,
     section: 'P — Plano',
-    question: 'Como você quer ser lembrado/cobrado?',
+    question: 'Como você quer ser lembrado?',
     type: 'single',
     options: ['WhatsApp', 'Grupo', 'E-mail', 'Checklist Notion', '"Não me cobre"'],
     required: true
@@ -544,14 +571,14 @@ export const questions: Question[] = [
   // Bônus opcional
   {
     id: 43,
-    section: 'Bônus opcional',
-    question: 'Cole 1–2 exemplos (anonimizados) de algo repetitivo que você escreve/fala',
+    section: 'Trilha de IA',
+    question: 'Pense um pouco e lembre de algo que você fala ou repete repetidas vezes para a equipe ou para os pacientes? Escreva abaixo:',
     type: 'textarea',
     required: false
   },
   {
     id: 44,
-    section: 'Bônus opcional',
+    section: 'Trilha de IA',
     question: 'Topa participar de um antes/depois (anonimizado) para medir resultado?',
     type: 'single',
     options: ['Sim', 'Talvez', 'Não'],

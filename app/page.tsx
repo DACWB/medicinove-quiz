@@ -23,7 +23,7 @@ export default function Home() {
 
     // Salvar token no localStorage e redirecionar
     localStorage.setItem('quizToken', token);
-    router.push('/quiz/identificacao');
+    router.push('/quiz/boas-vindas');
   };
 
   return (

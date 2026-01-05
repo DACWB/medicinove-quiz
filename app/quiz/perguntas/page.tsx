@@ -13,8 +13,16 @@ export default function Perguntas() {
   const router = useRouter();
 
   const questionsPerPage = 4;
-  const totalPages = Math.ceil(questions.length / questionsPerPage);
-  const currentQuestions = questions.slice(
+  
+  // Filtrar perguntas baseado em condições
+  const visibleQuestions = questions.filter(q => {
+    if (!q.conditionalOn) return true;
+    const parentAnswer = answers[q.conditionalOn.questionId];
+    return parentAnswer === q.conditionalOn.value;
+  });
+  
+  const totalPages = Math.ceil(visibleQuestions.length / questionsPerPage);
+  const currentQuestions = visibleQuestions.slice(
     currentPage * questionsPerPage,
     (currentPage + 1) * questionsPerPage
   );
