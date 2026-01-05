@@ -194,14 +194,29 @@ export default function Dashboard() {
                       {formatDate(student.createdAt)}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      {student.hasResult && (
-                        <button
-                          onClick={() => setSelectedStudent(student)}
-                          className="text-action hover:text-action-hover transition-colors"
-                        >
-                          Ver Resultado
-                        </button>
-                      )}
+                      <div className="flex items-center space-x-3">
+                        {student.hasResult && (
+                          <button
+                            onClick={() => setSelectedStudent(student)}
+                            className="text-action hover:text-action-hover transition-colors"
+                          >
+                            Ver Resultado
+                          </button>
+                        )}
+                        {student.answersCount > 0 && (
+                          <a
+                            href={`/api/admin/report/${student.id}`}
+                            download
+                            className="text-green-500 hover:text-green-400 transition-colors flex items-center space-x-1"
+                            title="Baixar relatório completo"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>TXT</span>
+                          </a>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
