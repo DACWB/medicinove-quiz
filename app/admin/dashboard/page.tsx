@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface Student {
   id: string;
@@ -17,33 +18,10 @@ interface Student {
   result: any;
 }
 
-interface AnswersData {
-  student: {
-    id: string;
-    name: string;
-    email: string;
-    whatsapp: string;
-    createdAt: string;
-    completed: boolean;
-  };
-  sections: {
-    section: string;
-    questions: {
-      id: number;
-      question: string;
-      type: string;
-      answer: any;
-      required: boolean;
-    }[];
-  }[];
-}
-
 export default function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [selectedAnswers, setSelectedAnswers] = useState<AnswersData | null>(null);
-  const [loadingAnswers, setLoadingAnswers] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -68,24 +46,6 @@ export default function Dashboard() {
     }
   };
 
-  const loadAnswers = async (studentId: string) => {
-    setLoadingAnswers(true);
-    try {
-      const response = await fetch(`/api/admin/answers/${studentId}`);
-      const data = await response.json();
-      setSelectedAnswers(data);
-    } catch (error) {
-      console.error('Erro ao carregar respostas:', error);
-    } finally {
-      setLoadingAnswers(false);
-    }
-  };
-
-  const handleViewAnswers = async (student: Student) => {
-    setSelectedStudent(student);
-    await loadAnswers(student.id);
-  };
-
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -94,31 +54,6 @@ export default function Dashboard() {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  const formatAnswer = (answer: any, type: string) => {
-    if (answer === undefined || answer === null || answer === '') {
-      return <span className="text-text-muted italic">(Não respondido)</span>;
-    }
-
-    if (Array.isArray(answer)) {
-      if (answer.length === 0) {
-        return <span className="text-text-muted italic">(Não respondido)</span>;
-      }
-      return (
-        <ul className="list-disc list-inside space-y-1">
-          {answer.map((item, index) => (
-            <li key={index} className="text-text-primary">{item}</li>
-          ))}
-        </ul>
-      );
-    }
-
-    if (typeof answer === 'number' && type === 'slider') {
-      return <span className="text-text-primary font-semibold text-xl">{answer}/10</span>;
-    }
-
-    return <p className="text-text-primary whitespace-pre-wrap">{answer}</p>;
   };
 
   if (loading) {
@@ -260,14 +195,24 @@ export default function Dashboard() {
                       {formatDate(student.createdAt)}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      {student.answersCount > 0 && (
-                        <button
-                          onClick={() => handleViewAnswers(student)}
-                          className="text-action hover:text-action-hover transition-colors font-medium"
-                        >
-                          Ver Respostas
-                        </button>
-                      )}
+                      <div className="flex items-center space-x-3">
+                        {student.hasResult && (
+                          <button
+                            onClick={() => setSelectedStudent(student)}
+                            className="text-action hover:text-action-hover transition-colors"
+                          >
+                            Ver Resultado
+                          </button>
+                        )}
+                        {student.answersCount > 0 && (
+                          <Link
+                            href={`/admin/respostas/${student.id}`}
+                            className="text-green-500 hover:text-green-400 transition-colors font-medium"
+                          >
+                            Ver Respostas
+                          </Link>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -276,83 +221,115 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Modal de Respostas Completas */}
-        {selectedStudent && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-bg-card rounded-2xl border border-border max-w-5xl w-full my-8">
-              {/* Header do Modal */}
-              <div className="p-6 border-b border-border flex justify-between items-center sticky top-0 bg-bg-card z-10">
-                <div>
-                  <h2 className="text-2xl font-bold text-text-primary">{selectedStudent.name}</h2>
-                  <p className="text-sm text-text-muted mt-1">
-                    {selectedStudent.email} • {selectedStudent.whatsapp}
-                  </p>
-                </div>
+        {/* Modal de Resultado (mantém o original) */}
+        {selectedStudent && selectedStudent.result && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+            <div className="bg-bg-card rounded-2xl border border-border max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-border flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-text-primary">{selectedStudent.name}</h2>
                 <button
-                  onClick={() => {
-                    setSelectedStudent(null);
-                    setSelectedAnswers(null);
-                  }}
+                  onClick={() => setSelectedStudent(null)}
                   className="text-text-muted hover:text-error transition-colors text-2xl"
                 >
                   ✕
                 </button>
               </div>
               
-              {/* Conteúdo do Modal */}
-              <div className="p-6 max-h-[70vh] overflow-y-auto">
-                {loadingAnswers ? (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-action mx-auto mb-4"></div>
-                    <p className="text-text-secondary">Carregando respostas...</p>
+              <div className="p-6">
+                {/* Perfil */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold mb-4 text-action">Perfil</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-bg-main p-4 rounded-lg border border-border">
+                      <p className="text-sm text-text-muted mb-1">Principal</p>
+                      <p className="text-xl font-bold text-text-primary">
+                        {selectedStudent.result.mainProfile}
+                      </p>
+                    </div>
+                    <div className="bg-bg-main p-4 rounded-lg border border-border">
+                      <p className="text-sm text-text-muted mb-1">Secundário</p>
+                      <p className="text-xl font-bold text-text-primary">
+                        {selectedStudent.result.secondProfile || 'N/A'}
+                      </p>
+                    </div>
                   </div>
-                ) : selectedAnswers ? (
-                  <div className="space-y-8">
-                    {selectedAnswers.sections.map((section, sectionIndex) => (
-                      <div key={sectionIndex}>
-                        {/* Cabeçalho da Seção */}
-                        <div className="mb-6">
-                          <h3 className="text-xl font-bold text-action border-b-2 border-action pb-2">
-                            {section.section}
-                          </h3>
-                        </div>
+                </div>
 
-                        {/* Perguntas e Respostas */}
-                        <div className="space-y-6">
-                          {section.questions.map((q, qIndex) => (
-                            <div key={qIndex} className="bg-bg-main p-5 rounded-lg border border-border">
-                              {/* Pergunta */}
-                              <div className="mb-3">
-                                <p className="font-semibold text-text-primary">
-                                  {q.question}
-                                  {q.required && <span className="text-error ml-1">*</span>}
-                                </p>
-                              </div>
-
-                              {/* Resposta */}
-                              <div className="pl-4 border-l-4 border-action/30">
-                                {formatAnswer(q.answer, q.type)}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                {/* Scores */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold mb-4 text-action">Scores</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-bg-main p-4 rounded-lg border border-border">
+                      <p className="text-sm text-text-muted mb-1">Conforto Tech</p>
+                      <p className="text-3xl font-bold text-action">
+                        {selectedStudent.result.confortoTech}/10
+                      </p>
+                    </div>
+                    <div className="bg-bg-main p-4 rounded-lg border border-border">
+                      <p className="text-sm text-text-muted mb-1">Maturidade IA</p>
+                      <p className="text-3xl font-bold text-action">
+                        {selectedStudent.result.maturidadeIA}/10
+                      </p>
+                    </div>
+                    <div className="bg-bg-main p-4 rounded-lg border border-border">
+                      <p className="text-sm text-text-muted mb-1">LGPD/Risco</p>
+                      <p className="text-3xl font-bold text-action">
+                        {selectedStudent.result.lgpdRisco}/10
+                      </p>
+                    </div>
                   </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <p className="text-text-muted">Erro ao carregar respostas</p>
+                </div>
+
+                {/* Trilha Recomendada */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold mb-4 text-action">Trilha Recomendada</h3>
+                  <div className="bg-bg-main p-6 rounded-lg border border-border">
+                    <p className="text-2xl font-bold text-text-primary mb-2">
+                      {selectedStudent.result.trilhaName}
+                    </p>
+                    <p className="text-text-muted">Trilha {selectedStudent.result.trilha}</p>
+                  </div>
+                </div>
+
+                {/* Flags de Alerta */}
+                {selectedStudent.result.flags && JSON.parse(selectedStudent.result.flags).length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-xl font-bold mb-4 text-action">Flags de Alerta</h3>
+                    <div className="space-y-2">
+                      {JSON.parse(selectedStudent.result.flags).map((flag: string, index: number) => (
+                        <div key={index} className="flex items-start space-x-2 bg-error/10 p-3 rounded-lg border border-error/30">
+                          <span className="text-error">⚠</span>
+                          <span className="text-text-primary">{flag}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
+
+                {/* Primeira Missão */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold mb-4 text-action">Primeira Missão (7 dias)</h3>
+                  <div className="bg-bg-main p-6 rounded-lg border border-border">
+                    <p className="text-text-primary whitespace-pre-wrap">
+                      {selectedStudent.result.primeiraMissao}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Resultado Completo */}
+                <div>
+                  <h3 className="text-xl font-bold mb-4 text-action">Resultado Completo</h3>
+                  <div className="bg-bg-main p-6 rounded-lg border border-border">
+                    <pre className="text-text-primary whitespace-pre-wrap font-mono text-sm">
+                      {selectedStudent.result.resultadoCompleto}
+                    </pre>
+                  </div>
+                </div>
               </div>
 
-              {/* Footer do Modal */}
               <div className="p-6 border-t border-border flex justify-end">
                 <button
-                  onClick={() => {
-                    setSelectedStudent(null);
-                    setSelectedAnswers(null);
-                  }}
+                  onClick={() => setSelectedStudent(null)}
                   className="px-6 py-3 bg-bg-main border border-border text-text-primary rounded-lg hover:border-action transition-colors"
                 >
                   Fechar
