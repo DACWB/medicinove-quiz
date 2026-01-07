@@ -24,7 +24,6 @@ interface AnswersData {
     email: string;
     whatsapp: string;
     createdAt: string;
-    completedAt: string | null;
     completed: boolean;
   };
   sections: {

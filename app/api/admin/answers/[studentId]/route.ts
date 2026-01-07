@@ -82,7 +82,6 @@ export async function GET(
         email: student.email,
         whatsapp: student.whatsapp,
         createdAt: student.createdAt,
-        completedAt: student.completedAt,
         completed: student.completed
       },
       sections
