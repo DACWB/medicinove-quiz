@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import Link from 'next/link';
 
 interface Student {
   id: string;
@@ -14,14 +13,78 @@ interface Student {
   completed: boolean;
   createdAt: string;
   answersCount: number;
-  hasResult: boolean;
-  result: any;
+  answers?: Array<{
+    questionId: number;
+    answer: string;
+  }>;
+}
+
+interface Question {
+  id: number;
+  text: string;
+  section: string;
 }
 
 export default function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
+  const [questions] = useState<Question[]>([
+    // LGPD
+    { id: 1, section: 'LGPD', text: 'Consentimento para uso dos seus dados na mentoria (obrigatório)' },
+    { id: 2, section: 'LGPD', text: 'Canal preferido para comunicações essenciais da mentoria' },
+    
+    // Identificação
+    { id: 3, section: 'Identificação', text: 'Nome completo' },
+    { id: 4, section: 'Identificação', text: 'E-mail' },
+    { id: 5, section: 'Identificação', text: 'WhatsApp' },
+    
+    // S - Subjetivo
+    { id: 6, section: 'S - Subjetivo', text: 'Especialidade principal' },
+    { id: 7, section: 'S - Subjetivo', text: 'Especialidade secundária' },
+    { id: 8, section: 'S - Subjetivo', text: 'Tipo de atendimento' },
+    { id: 9, section: 'S - Subjetivo', text: 'Quantos atendimentos por dia?' },
+    { id: 10, section: 'S - Subjetivo', text: 'Quantos atendimentos por semana?' },
+    { id: 11, section: 'S - Subjetivo', text: 'Quantos atendimentos por mês?' },
+    { id: 12, section: 'S - Subjetivo', text: 'Tempo médio de consulta' },
+    { id: 13, section: 'S - Subjetivo', text: 'Tempo médio de retorno' },
+    { id: 14, section: 'S - Subjetivo', text: 'Quantas pessoas na equipe?' },
+    { id: 15, section: 'S - Subjetivo', text: 'Quem são essas pessoas?' },
+    { id: 16, section: 'S - Subjetivo', text: 'Maior dificuldade com a equipe' },
+    { id: 17, section: 'S - Subjetivo', text: 'Maior dificuldade com pacientes' },
+    { id: 18, section: 'S - Subjetivo', text: 'Maior dificuldade com gestão' },
+    
+    // O - Objetivo
+    { id: 19, section: 'O - Objetivo', text: 'Faturamento mensal atual' },
+    { id: 20, section: 'O - Objetivo', text: 'Faturamento mensal desejado' },
+    { id: 21, section: 'O - Objetivo', text: 'Prazo para atingir faturamento desejado' },
+    { id: 22, section: 'O - Objetivo', text: 'Maior obstáculo para crescer' },
+    
+    // A - Avaliação
+    { id: 23, section: 'A - Avaliação', text: 'Conforto com tecnologia (0-10)' },
+    { id: 24, section: 'A - Avaliação', text: 'Maturidade em IA (0-10)' },
+    { id: 25, section: 'A - Avaliação', text: 'LGPD/Risco (0-10)' },
+    { id: 26, section: 'A - Avaliação', text: 'Já usa IA paga?' },
+    { id: 27, section: 'A - Avaliação', text: 'Principais IAs que usa' },
+    { id: 28, section: 'A - Avaliação', text: 'Maior preocupação com IA' },
+    { id: 29, section: 'A - Avaliação', text: 'Maior expectativa com IA' },
+    
+    // P - Plano
+    { id: 30, section: 'P - Plano', text: 'Frequência de lembretes' },
+    { id: 31, section: 'P - Plano', text: 'Melhor horário para lembretes' },
+    { id: 32, section: 'P - Plano', text: 'Formato preferido de conteúdo' },
+    { id: 33, section: 'P - Plano', text: 'Gatilho da mentoria' },
+    { id: 34, section: 'P - Plano', text: 'Primeira missão (7 dias)' },
+    
+    // IA
+    { id: 35, section: 'IA', text: 'Trilha recomendada' },
+    { id: 36, section: 'IA', text: 'Flags de alerta' },
+    { id: 37, section: 'IA', text: 'Observações adicionais' },
+    
+    // Trilha de IA
+    { id: 38, section: 'Trilha de IA', text: 'Frase que repete para equipe/pacientes' },
+  ]);
+  
   const router = useRouter();
 
   useEffect(() => {
@@ -46,6 +109,25 @@ export default function Dashboard() {
     }
   };
 
+  const loadStudentAnswers = async (studentId: string) => {
+    if (expandedStudent === studentId) {
+      setExpandedStudent(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/students/${studentId}/answers`);
+      const data = await response.json();
+      
+      setStudents(prev => prev.map(s => 
+        s.id === studentId ? { ...s, answers: data.answers } : s
+      ));
+      setExpandedStudent(studentId);
+    } catch (error) {
+      console.error('Erro ao carregar respostas:', error);
+    }
+  };
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -54,6 +136,11 @@ export default function Dashboard() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const getAnswer = (student: Student, questionId: number) => {
+    const answer = student.answers?.find(a => a.questionId === questionId);
+    return answer?.answer || '(não respondido)';
   };
 
   if (loading) {
@@ -96,248 +183,63 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-bg-card p-6 rounded-xl border border-border">
-            <p className="text-text-muted text-sm mb-1">Total</p>
-            <p className="text-3xl font-bold text-action">{students.length}</p>
-          </div>
-          <div className="bg-bg-card p-6 rounded-xl border border-border">
-            <p className="text-text-muted text-sm mb-1">Completos</p>
-            <p className="text-3xl font-bold text-green-500">
-              {students.filter(s => s.completed).length}
-            </p>
-          </div>
-          <div className="bg-bg-card p-6 rounded-xl border border-border">
-            <p className="text-text-muted text-sm mb-1">Em Andamento</p>
-            <p className="text-3xl font-bold text-yellow-500">
-              {students.filter(s => !s.completed && s.answersCount > 0).length}
-            </p>
-          </div>
-          <div className="bg-bg-card p-6 rounded-xl border border-border">
-            <p className="text-text-muted text-sm mb-1">Não Iniciados</p>
-            <p className="text-3xl font-bold text-text-muted">
-              {students.filter(s => s.answersCount === 0).length}
-            </p>
-          </div>
-        </div>
-
-        {/* Students List */}
-        <div className="bg-bg-card rounded-xl border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-bg-main border-b border-border">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">
-                    Nome
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">
-                    Email
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">
-                    WhatsApp
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">
-                    Progresso
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">
-                    Data
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {students.map((student) => (
-                  <tr key={student.id} className="hover:bg-bg-main transition-colors">
-                    <td className="px-6 py-4 text-sm text-text-primary">
-                      {student.name}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-text-secondary">
-                      {student.email}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-text-secondary">
-                      {student.whatsapp}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <div className="flex items-center space-x-2">
-                        <div className="flex-1 bg-border rounded-full h-2 max-w-[100px]">
-                          <div
-                            className="bg-action h-2 rounded-full"
-                            style={{ width: `${(student.answersCount / 44) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-text-muted text-xs">
-                          {student.answersCount}/44
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      {student.completed ? (
-                        <span className="px-2 py-1 bg-green-500/20 text-green-500 rounded-full text-xs">
-                          Completo
-                        </span>
-                      ) : student.answersCount > 0 ? (
-                        <span className="px-2 py-1 bg-yellow-500/20 text-yellow-500 rounded-full text-xs">
-                          Em andamento
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 bg-gray-500/20 text-gray-500 rounded-full text-xs">
-                          Não iniciado
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-text-muted">
-                      {formatDate(student.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <div className="flex items-center space-x-3">
-                        {student.hasResult && (
-                          <button
-                            onClick={() => setSelectedStudent(student)}
-                            className="text-action hover:text-action-hover transition-colors"
-                          >
-                            Ver Resultado
-                          </button>
-                        )}
-                        {student.answersCount > 0 && (
-                          <Link
-                            href={`/admin/respostas/${student.id}`}
-                            className="text-green-500 hover:text-green-400 transition-colors font-medium"
-                          >
-                            Ver Respostas
-                          </Link>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Modal de Resultado (mantém o original) */}
-        {selectedStudent && selectedStudent.result && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-            <div className="bg-bg-card rounded-2xl border border-border max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-border flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-text-primary">{selectedStudent.name}</h2>
-                <button
-                  onClick={() => setSelectedStudent(null)}
-                  className="text-text-muted hover:text-error transition-colors text-2xl"
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <div className="p-6">
-                {/* Perfil */}
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold mb-4 text-action">Perfil</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-bg-main p-4 rounded-lg border border-border">
-                      <p className="text-sm text-text-muted mb-1">Principal</p>
-                      <p className="text-xl font-bold text-text-primary">
-                        {selectedStudent.result.mainProfile}
-                      </p>
-                    </div>
-                    <div className="bg-bg-main p-4 rounded-lg border border-border">
-                      <p className="text-sm text-text-muted mb-1">Secundário</p>
-                      <p className="text-xl font-bold text-text-primary">
-                        {selectedStudent.result.secondProfile || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Scores */}
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold mb-4 text-action">Scores</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-bg-main p-4 rounded-lg border border-border">
-                      <p className="text-sm text-text-muted mb-1">Conforto Tech</p>
-                      <p className="text-3xl font-bold text-action">
-                        {selectedStudent.result.confortoTech}/10
-                      </p>
-                    </div>
-                    <div className="bg-bg-main p-4 rounded-lg border border-border">
-                      <p className="text-sm text-text-muted mb-1">Maturidade IA</p>
-                      <p className="text-3xl font-bold text-action">
-                        {selectedStudent.result.maturidadeIA}/10
-                      </p>
-                    </div>
-                    <div className="bg-bg-main p-4 rounded-lg border border-border">
-                      <p className="text-sm text-text-muted mb-1">LGPD/Risco</p>
-                      <p className="text-3xl font-bold text-action">
-                        {selectedStudent.result.lgpdRisco}/10
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Trilha Recomendada */}
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold mb-4 text-action">Trilha Recomendada</h3>
-                  <div className="bg-bg-main p-6 rounded-lg border border-border">
-                    <p className="text-2xl font-bold text-text-primary mb-2">
-                      {selectedStudent.result.trilhaName}
+        {/* Lista de Mentorados */}
+        <div className="space-y-4">
+          {students.length === 0 ? (
+            <div className="text-center py-12 bg-surface rounded-lg">
+              <p className="text-text-secondary">Nenhum mentorado cadastrado ainda.</p>
+            </div>
+          ) : (
+            students.map(student => (
+              <div key={student.id} className="bg-surface rounded-lg p-6">
+                {/* Cabeçalho do Mentorado */}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-bold">{student.name}</h2>
+                    <p className="text-text-secondary text-sm">{student.email} • {student.whatsapp}</p>
+                    <p className="text-text-secondary text-sm">Cadastrado em: {formatDate(student.createdAt)}</p>
+                    <p className="text-sm">
+                      <span className={student.completed ? 'text-success' : 'text-warning'}>
+                        {student.completed ? '✓ Completo' : `Em andamento (${student.progress}/44)`}
+                      </span>
                     </p>
-                    <p className="text-text-muted">Trilha {selectedStudent.result.trilha}</p>
                   </div>
+                  <button
+                    onClick={() => loadStudentAnswers(student.id)}
+                    className="px-4 py-2 bg-action text-white rounded-lg hover:bg-action/90 transition-colors"
+                  >
+                    {expandedStudent === student.id ? 'Ocultar Respostas' : 'Ver Respostas'}
+                  </button>
                 </div>
 
-                {/* Flags de Alerta */}
-                {selectedStudent.result.flags && JSON.parse(selectedStudent.result.flags).length > 0 && (
-                  <div className="mb-8">
-                    <h3 className="text-xl font-bold mb-4 text-action">Flags de Alerta</h3>
-                    <div className="space-y-2">
-                      {JSON.parse(selectedStudent.result.flags).map((flag: string, index: number) => (
-                        <div key={index} className="flex items-start space-x-2 bg-error/10 p-3 rounded-lg border border-error/30">
-                          <span className="text-error">⚠</span>
-                          <span className="text-text-primary">{flag}</span>
+                {/* Respostas Expandidas */}
+                {expandedStudent === student.id && student.answers && (
+                  <div className="mt-6 pt-6 border-t border-border space-y-6">
+                    {['LGPD', 'Identificação', 'S - Subjetivo', 'O - Objetivo', 'A - Avaliação', 'P - Plano', 'IA', 'Trilha de IA'].map(section => {
+                      const sectionQuestions = questions.filter(q => q.section === section);
+                      
+                      return (
+                        <div key={section}>
+                          <h3 className="text-lg font-bold mb-3 text-action">{section}</h3>
+                          <div className="space-y-3">
+                            {sectionQuestions.map(question => (
+                              <div key={question.id} className="text-sm">
+                                <p className="font-semibold mb-1">{question.text}</p>
+                                <p className="text-text-secondary pl-4">
+                                  {getAnswer(student, question.id)}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
                 )}
-
-                {/* Primeira Missão */}
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold mb-4 text-action">Primeira Missão (7 dias)</h3>
-                  <div className="bg-bg-main p-6 rounded-lg border border-border">
-                    <p className="text-text-primary whitespace-pre-wrap">
-                      {selectedStudent.result.primeiraMissao}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Resultado Completo */}
-                <div>
-                  <h3 className="text-xl font-bold mb-4 text-action">Resultado Completo</h3>
-                  <div className="bg-bg-main p-6 rounded-lg border border-border">
-                    <pre className="text-text-primary whitespace-pre-wrap font-mono text-sm">
-                      {selectedStudent.result.resultadoCompleto}
-                    </pre>
-                  </div>
-                </div>
               </div>
-
-              <div className="p-6 border-t border-border flex justify-end">
-                <button
-                  onClick={() => setSelectedStudent(null)}
-                  className="px-6 py-3 bg-bg-main border border-border text-text-primary rounded-lg hover:border-action transition-colors"
-                >
-                  Fechar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
